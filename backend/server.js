@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // 🔥 Use env PORT for Render
 
 // Middleware
 app.use(cors());
@@ -25,7 +25,7 @@ let leaderboard = [];
 function playGame(playerChoice) {
     const choices = ['rock', 'paper', 'scissors'];
     const computerChoice = choices[Math.floor(Math.random() * 3)];
-    
+
     let result;
     if (playerChoice === computerChoice) {
         result = 'tie';
@@ -41,9 +41,9 @@ function playGame(playerChoice) {
         result = 'lose';
         gameStats.computerWins++;
     }
-    
+
     gameStats.totalGames++;
-    
+
     const gameData = {
         id: Date.now(),
         playerChoice,
@@ -51,12 +51,12 @@ function playGame(playerChoice) {
         result,
         timestamp: new Date().toISOString()
     };
-    
+
     gameStats.recentGames.unshift(gameData);
     if (gameStats.recentGames.length > 10) {
         gameStats.recentGames.pop();
     }
-    
+
     return gameData;
 }
 
@@ -76,13 +76,13 @@ app.get('/results', (req, res) => {
 // API Routes
 app.post('/api/play', (req, res) => {
     const { playerChoice, playerName } = req.body;
-    
+
     if (!['rock', 'paper', 'scissors'].includes(playerChoice)) {
         return res.status(400).json({ error: 'Invalid choice' });
     }
-    
+
     const gameResult = playGame(playerChoice);
-    
+
     // Update leaderboard
     if (playerName) {
         let player = leaderboard.find(p => p.name === playerName);
@@ -90,16 +90,16 @@ app.post('/api/play', (req, res) => {
             player = { name: playerName, wins: 0, losses: 0, ties: 0, totalGames: 0 };
             leaderboard.push(player);
         }
-        
+
         player.totalGames++;
         if (gameResult.result === 'win') player.wins++;
         else if (gameResult.result === 'lose') player.losses++;
         else player.ties++;
-        
+
         // Sort leaderboard by wins
         leaderboard.sort((a, b) => b.wins - a.wins);
     }
-    
+
     res.json(gameResult);
 });
 
@@ -123,7 +123,8 @@ app.post('/api/reset', (req, res) => {
     res.json({ message: 'Stats reset successfully' });
 });
 
-app.listen(PORT, () => {
-    console.log(`🚀 Rock Paper Scissors server running on http://localhost:${PORT}`);
+// ✅ Fix: Bind to 0.0.0.0 for Render
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Rock Paper Scissors server running on port ${PORT}`);
     console.log(`📁 Make sure to create a 'public' folder with HTML files`);
 });
